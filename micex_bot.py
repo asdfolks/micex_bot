@@ -12,10 +12,10 @@ from flask import request
 
 app = Flask(__name__)
 
-_TOKEN = ''  # Telegram bot token here
+_TOKEN = os.environ.get('TELEGRAM_API_TOKEN')
 _API_PREFIX = 'https://api.telegram.org/bot'
 _API = _API_PREFIX + _TOKEN
-_WEB_HOOK = 'https://pacific-falls-81869.herokuapp.com/' + urllib.quote_plus(_TOKEN)
+_WEB_HOOK = os.environ.get('WEBHOOK_HOSTNAME') + urllib.quote_plus(_TOKEN)
 _MICEX_USDRUB_URL = 'http://www.micex.ru/issrpc/marketdata/currency/selt/daily/preview/result.json?collection_id=173&board_group_id=13'
 
 
