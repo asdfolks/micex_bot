@@ -2,4 +2,12 @@
 
 Currently designed to work on Heroku cloud.
 
-Update _TOKEN with your bot token and `git push heroku master` to your instance.
+## How to start
+
+Update Telegram bot token and server hostname:
+
+`heroku config:set TELEGRAM_API_TOKEN=<your_token_here>`
+
+`heroku config:set WEBHOOK_HOSTNAME=<heroku_app_hostname>`
+
+And then `git push heroku master` to run your app.
