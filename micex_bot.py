@@ -71,7 +71,7 @@ def send_micex_usdrub_data(to):
     message_template = '{SHORTNAME}: {LAST} ({CHANGE})'
     for ticker in data:
         name = ticker['SHORTNAME']
-        if isinstance(ticker, dict) and '_TOD' in name or '_TOM' not in name:
+        if isinstance(ticker, dict) and ('_TOD' in name or '_TOM' in name):
             msg = message_template.format(**ticker)
             message += msg
 
