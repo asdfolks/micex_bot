@@ -68,10 +68,7 @@ def send_micex_usdrub_data(to):
     sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
     data = json.loads(r.text.decode('utf-8'))
     message = ''
-    message_template = '{SHORTNAME}: {LAST}, '\
-                       '[{LOW}, {HIGH}], '\
-                       'обновлено {UPDATETIME}, '\
-                       'текущее время {SYSTIME}\n\n'
+    message_template = '{SHORTNAME}: {LAST} ({CHANGE})'
     for ticker in data:
         name = ticker['SHORTNAME']
         if isinstance(ticker, dict) and '_TOD' in name or '_TOM' not in name:
