@@ -68,12 +68,13 @@ def send_micex_usdrub_data(to):
     sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
     data = json.loads(r.text.decode('utf-8'))
     message = ''
-    message_template = 'Инструмент: {SHORTNAME}: {LAST},\n'\
-                       'Максимум: {HIGH}, Минимум: {LOW},\n'\
-                       'Последнее обновление {UPDATETIME},\n'\
-                       'Время на бирже {SYSTIME}\n\n'
+    message_template = '{SHORTNAME}: {LAST}, '\
+                       '[{LOW}, {HIGH}], '\
+                       'обновлено {UPDATETIME}, '\
+                       'текущее время {SYSTIME}\n\n'
     for ticker in data:
-        if isinstance(ticker, dict) and '_SPT' not in ticker['SHORTNAME']:
+        name = ticker['SHORTNAME']
+        if isinstance(ticker, dict) and '_TOD' in name or '_TOM' not in name:
             msg = message_template.format(**ticker)
             message += msg
 
