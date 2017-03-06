@@ -80,20 +80,13 @@ def send_micex_usdrub_data(to):
                 continue
 
             up_or_down = ticker['CHANGE']
-            try:
-                up_or_down = float(up_or_down)
-            except (ValueError, TypeError):
-                up_or_down = 0
-
             if up_or_down > 0:
                 ticker['UP_OR_DOWN_SIGN'] = _UP
+            elif up_or_down < 0:
+                ticker['CHANGE'] = -ticker['CHANGE']
+                ticker['UP_OR_DOWN_SIGN'] = _DOWN
             else:
-                if ticker['CHANGE'].startswith('-'):
-                    ticker['CHANGE'] = ticker['CHANGE'][1:]
-                if up_or_down < 0:
-                    ticker['UP_OR_DOWN_SIGN'] = _DOWN
-                else:
-                    ticker['UP_OR_DOWN_SIGN'] = ''
+                ticker['UP_OR_DOWN_SIGN'] = ''
             msg = message_template.format(**ticker)
             message += msg
     headers = {'Content-Type': 'application/json'}
