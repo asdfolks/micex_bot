@@ -21,6 +21,9 @@ _YAHOO_FINANCE_RUBKRW_URL = 'https://query.yahooapis.com/v1/public/yql?q=SELECT%
 _YAHOO_FINANCE_KRWRUB_URL = 'https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20yahoo.finance.xchange%20WHERE%20pair%3D%22KRWRUB%22%20%7C%20truncate(count%3D1)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback='
 _YAHOO_FINANCE_USDKRW_URL = 'https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20yahoo.finance.xchange%20WHERE%20pair%3D%22USDKRW%22%20%7C%20truncate(count%3D1)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback='
 
+_DOWN = u'\u2198'
+_UP = u'\u2197'
+
 def set_webhook():
     headers = {'Content-Type': 'application/json'}
     r = requests.post(_API + '/setWebhook',
@@ -68,13 +71,31 @@ def send_micex_usdrub_data(to):
     sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
     data = json.loads(r.text.decode('utf-8'))
     message = ''
-    message_template = '{SHORTNAME}: {LAST} ({CHANGE})\n'
+    message_template = '{SHORTNAME}: {LAST} {UP_OR_DOWN_SIGN}{CHANGE}\n'
     for ticker in data:
         if isinstance(ticker, dict):
+
             name = ticker['SHORTNAME']
-            if '_TOD' in name or '_TOM' in name:
-                msg = message_template.format(**ticker)
-                message += msg
+            if not ('_TOD' in name or '_TOM' in name):
+                continue
+
+            up_or_down = ticker['CHANGE']
+            try:
+                up_or_down = float(up_or_down)
+            except (ValueError, TypeError):
+                up_or_down = 0
+
+            if up_or_down > 0:
+                ticker['UP_OR_DOWN_SIGN'] = _UP
+            else:
+                if ticker['CHANGE'].startswith('-'):
+                    ticker['CHANGE'] = ticker['CHANGE'][1:]
+                if up_or_down < 0:
+                    ticker['UP_OR_DOWN_SIGN'] = _DOWN
+                else:
+                    ticker['UP_OR_DOWN_SIGN'] = ''
+            msg = message_template.format(**ticker)
+            message += msg
     headers = {'Content-Type': 'application/json'}
     r = requests.post(
         _API + '/sendMessage',
