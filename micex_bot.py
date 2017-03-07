@@ -72,7 +72,7 @@ def send_micex_usdrub_data(to):
     sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
     data = json.loads(r.text.decode('utf-8'))
     message = ''
-    message_template = u'{SHORTNAME}: {LAST} {UP_OR_DOWN_SIGN}({CHANGE_PCT}%)\n'
+    message_template = u'{SHORTNAME}: {LAST} {UP_OR_DOWN_SIGN} {CHANGE_PCT}%\n'
     for ticker in data:
         if isinstance(ticker, dict):
 
@@ -99,7 +99,7 @@ def send_micex_usdrub_data(to):
 
 
 def get_delta_in_percents(value, delta):
-    return '{0:.2f}'.format(delta / (value + delta) * 100 + 1)
+    return '{0:.2f}'.format(100 * (1 - (value + delta) / value))
 
 
 def get_up_or_down_sign(delta):
