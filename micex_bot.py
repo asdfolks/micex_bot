@@ -66,13 +66,17 @@ def send_yahoo_finance_krw_data(to, base):
 
 
 def send_micex_usdrub_data(to):
+
+    usa_flag = u'\U0001f1fa\U0001f1f8'
+    rub_sign = u'\u20bd'
+
     if to is None:
         sys.stderr.write('Cannot find chat_id\n')
     r = requests.get(_MICEX_USDRUB_URL)
     sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
     data = json.loads(r.text.decode('utf-8'))
     message = ''
-    message_template = u'{SHORTNAME}: {LAST} {UP_OR_DOWN_SIGN} {CHANGE_PCT}%\n'
+    message_template = u'{FLAG_SIGN}{UP_OR_DOWN_SIGN} {LAST}{MONEY_SIGN} {CHANGE_PCT}%\n'
     for ticker in data:
         if isinstance(ticker, dict):
 
@@ -83,6 +87,8 @@ def send_micex_usdrub_data(to):
             delta = ticker['CHANGE']
             value = ticker['LAST']
 
+            ticker['FLAG_SIGN'] = usa_flag
+            ticker['MONEY_SIGN'] = rub_sign
             ticker['UP_OR_DOWN_SIGN'] = get_up_or_down_sign(delta)
             ticker['CHANGE_PCT'] = get_delta_in_percents(value, delta)
             ticker['LAST'] = '{0:.2f}'.format(value)
@@ -104,8 +110,8 @@ def get_delta_in_percents(value, delta):
 
 def get_up_or_down_sign(delta):
 
-    downwards_arrow = u'\u2193'
-    upwards_arrow = u'\u2191'
+    upwards_arrow = u'\u2b06'
+    downwards_arrow = u'\u2b07'
 
     if delta > 0:
         return upwards_arrow
