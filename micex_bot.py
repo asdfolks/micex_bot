@@ -69,6 +69,8 @@ def send_micex_usdrub_data(to):
 
     usa_flag = u'\U0001f1fa\U0001f1f8'
     rub_sign = u'\u20bd'
+    day_sign = u'\U0001f307'
+    night_sign = u'\U0001f303'
 
     if to is None:
         sys.stderr.write('Cannot find chat_id\n')
@@ -76,7 +78,7 @@ def send_micex_usdrub_data(to):
     sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
     data = json.loads(r.text.decode('utf-8'))
     message = ''
-    message_template = u'{FLAG_SIGN}{UP_OR_DOWN_SIGN} {LAST}{MONEY_SIGN} {CHANGE_PCT}%\n'
+    message_template = u'{FLAG_SIGN}{TOD_TOM_SIGN} {LAST}{MONEY_SIGN} {CHANGE_PCT}%{UP_OR_DOWN_SIGN}\n'
     for ticker in data:
         if isinstance(ticker, dict):
 
@@ -87,6 +89,7 @@ def send_micex_usdrub_data(to):
             delta = ticker['CHANGE']
             value = ticker['LAST']
 
+            ticker['TOD_TOM_SIGN'] = day_sign if 'TOD' in name else night_sign
             ticker['FLAG_SIGN'] = usa_flag
             ticker['MONEY_SIGN'] = rub_sign
             ticker['UP_OR_DOWN_SIGN'] = get_up_or_down_sign(delta)
@@ -105,7 +108,7 @@ def send_micex_usdrub_data(to):
 
 
 def get_delta_in_percents(value, delta):
-    return '{0:.2f}'.format(100 * (1 - (value + delta) / value))
+    return '{0:.2f}'.format(100 * delta / (delta + value))
 
 
 def get_up_or_down_sign(delta):
