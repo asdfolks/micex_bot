@@ -21,8 +21,6 @@ _YAHOO_FINANCE_RUBKRW_URL = 'https://query.yahooapis.com/v1/public/yql?q=SELECT%
 _YAHOO_FINANCE_KRWRUB_URL = 'https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20yahoo.finance.xchange%20WHERE%20pair%3D%22KRWRUB%22%20%7C%20truncate(count%3D1)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback='
 _YAHOO_FINANCE_USDKRW_URL = 'https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20yahoo.finance.xchange%20WHERE%20pair%3D%22USDKRW%22%20%7C%20truncate(count%3D1)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback='
 
-_DOWN = u'\u2198'
-_UP = u'\u2197'
 
 def set_webhook():
     headers = {'Content-Type': 'application/json'}
@@ -71,7 +69,7 @@ def send_micex_usdrub_data(to):
     sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
     data = json.loads(r.text.decode('utf-8'))
     message = ''
-    message_template = u'{SHORTNAME}: {LAST} {UP_OR_DOWN_SIGN}{CHANGE}\n'
+    message_template = u'{SHORTNAME}: {LAST} {UP_OR_DOWN_SIGN}({CHANGE_PCT})\n'
     for ticker in data:
         if isinstance(ticker, dict):
 
@@ -79,16 +77,16 @@ def send_micex_usdrub_data(to):
             if not ('_TOD' in name or '_TOM' in name):
                 continue
 
-            up_or_down = ticker['CHANGE']
-            if up_or_down > 0:
-                ticker['UP_OR_DOWN_SIGN'] = _UP
-            elif up_or_down < 0:
-                ticker['CHANGE'] = -ticker['CHANGE']
-                ticker['UP_OR_DOWN_SIGN'] = _DOWN
-            else:
-                ticker['UP_OR_DOWN_SIGN'] = ''
+            delta = ticker['CHANGE']
+            value = ticker['LAST']
+
+            ticker['UP_OR_DOWN_SIGN'] = get_up_or_down_sign(delta)
+            ticker['CHANGE_PCT'] = get_delta_in_percents(value, delta)
+            ticker['LAST'] = '{0:.2f}'.format(value)
+
             msg = message_template.format(**ticker)
             message += msg
+    print message
     headers = {'Content-Type': 'application/json'}
     r = requests.post(
         _API + '/sendMessage',
@@ -96,6 +94,23 @@ def send_micex_usdrub_data(to):
         headers=headers)
     sys.stderr.write('Telegram sendMessage reply {0}: {1}'.format(
         r.status_code, r.text))
+
+
+def get_delta_in_percents(value, delta):
+    return '{0:.2f}'.format(delta / (value + delta) * 100 + 1)
+
+
+def get_up_or_down_sign(delta):
+
+    downwards_arrow = u'\u2193'
+    upwards_arrow = u'\u2191'
+
+    if delta > 0:
+        return upwards_arrow
+    elif delta < 0:
+        return downwards_arrow
+    else:
+        return ''
 
 
 def parse_command(update):
