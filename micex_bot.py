@@ -89,7 +89,6 @@ def send_micex_usdrub_data(to):
 
             msg = message_template.format(**ticker)
             message += msg
-    print message
     headers = {'Content-Type': 'application/json'}
     r = requests.post(
         _API + '/sendMessage',
