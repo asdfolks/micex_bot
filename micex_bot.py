@@ -10,7 +10,10 @@ import requests
 from flask import Flask
 from flask import request
 
+from raven.contrib.flask import Sentry
+
 app = Flask(__name__)
+sentry = Sentry(app)
 
 _TOKEN = os.environ.get('TELEGRAM_API_TOKEN')
 _API_PREFIX = 'https://api.telegram.org/bot'
