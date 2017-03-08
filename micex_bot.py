@@ -18,6 +18,7 @@ sentry = Sentry(app)
 _TOKEN = os.environ.get('TELEGRAM_API_TOKEN')
 _API_PREFIX = 'https://api.telegram.org/bot'
 _API = _API_PREFIX + _TOKEN
+_SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP']
 _WEB_HOOK = os.environ.get('WEBHOOK_HOSTNAME') + urllib.quote_plus(_TOKEN)
 _YAHOO_FINANCE_RUBKRW_URL = 'https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20yahoo.finance.xchange%20WHERE%20pair%3D%22RUBKRW%22%20%7C%20truncate(count%3D1)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback='
 _YAHOO_FINANCE_KRWRUB_URL = 'https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20yahoo.finance.xchange%20WHERE%20pair%3D%22KRWRUB%22%20%7C%20truncate(count%3D1)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback='
@@ -64,21 +65,25 @@ def send_yahoo_finance_krw_data(to, base):
         r.status_code, r.text))
 
 
-def extract_moex_data(currency):
+def extract_moex_data(currencies):
     url_map = {
         'usd': 'http://www.micex.ru/issrpc/marketdata/currency/selt/daily/preview/result.json?collection_id=173&board_group_id=13',
         'eur': 'http://www.micex.ru/issrpc/marketdata/currency/selt/daily/preview/result.json?collection_id=172&board_group_id=13',
         'gbp': 'http://www.micex.ru/issrpc/marketdata/currency/selt/daily/preview/result.json?collection_id=171&board_group_id=13',
     }
-    url = url_map.get(currency.lower())
-    r = requests.get(url)
-    sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
-    return json.loads(r.text.decode('utf-8'))
+    if isinstance(currencies, basestring):
+        currencies = [currencies]
+    result = []
+    for c in currencies:
+        url = url_map.get(c.lower())
+        r = requests.get(url)
+        sys.stderr.write('MICEX reply {0}: {1}\n'.format(r.status_code, r.text))
+        result.extend(json.loads(r.text.decode('utf-8')))
+    return result
 
 
 def transform_moex_data(data):
     rub_sign = u'\u20bd'
-    supported_currencies = ['USD', 'EUR', 'GBP']
     message = ''
     message_template = u'{FLAG_SIGN}{TOD_TOM_SIGN} {LAST}{MONEY_SIGN} {CHANGE_PCT}%{UP_OR_DOWN_SIGN}\n'
 
@@ -90,7 +95,7 @@ def transform_moex_data(data):
             value = ticker['LAST']
 
             is_tod_tom = any(name.endswith(s) for s in ['_TOD', '_TOM'])
-            is_usd_eur_gbp = any(name.startswith(c) for c in supported_currencies)
+            is_usd_eur_gbp = any(name.startswith(c) for c in _SUPPORTED_CURRENCIES)
 
             if not (is_tod_tom and is_usd_eur_gbp):
                 continue
@@ -171,7 +176,7 @@ def parse_command(update):
         '^/(?P<command>[^\s@]+)(?:@\S+\s)?(?P<inline_message>.*)?', message)
     if match is None:
         return None, None
-    return match.group('command'), match.group('inline_message')
+    return match.group('command').lower(), match.group('inline_message')
 
 
 @app.route('/' + _TOKEN, methods=['POST'])
@@ -182,8 +187,10 @@ def web_hook():
 
     command, _ = parse_command(data)
     chat_id = data.get('message', {}).get('chat', {}).get('id')
-    if command in ['usd', 'eur', 'gbp']:
+    if any(command == c.lower() for c in _SUPPORTED_CURRENCIES):
         process_micex_currency_data(chat_id, command)
+    elif command == 'basket':
+        process_micex_currency_data(chat_id, _SUPPORTED_CURRENCIES)
     elif command == 'rubikilowon':
         send_yahoo_finance_krw_data(chat_id, 'kilokrw')
         send_yahoo_finance_krw_data(chat_id, 'usd')
